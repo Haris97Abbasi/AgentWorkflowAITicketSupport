@@ -39,6 +39,7 @@ AIAgent responseAgent = chatClient.AsAIAgent(
         Write a concise, professional and empathetic reply of 3-5 sentences, addressed to the customer.
         Mention which team is handling the ticket and what happens next, based on the handling instruction.
         Do not promise refunds, fixes or timelines that you cannot guarantee.
+        Do not state company policies, prices or facts that are not given to you; say the team will follow up instead.
         Do not reveal internal wording verbatim, and do not add a subject line or placeholders like [Name].
         """);
 

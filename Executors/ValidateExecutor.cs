@@ -4,7 +4,7 @@ namespace AgentWorkflowAITicketSupport.Executors;
 
 [SendsMessage(typeof(SupportTicket))]
 [YieldsOutput(typeof(string))]
-public sealed class ValidateExecutor() : Executor<SupportTicket> ("Validate")
+public sealed class ValidateExecutor() : Executor<SupportTicket>("Validate")
 {
     private const int MinLength = 10;
 

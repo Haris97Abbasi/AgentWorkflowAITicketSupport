@@ -399,3 +399,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Task description (not part of the project)
+MS_Agent_Framework_Workflow_Practical_Task.pdf
