@@ -60,3 +60,67 @@ var workflow = new WorkflowBuilder(validate)
     .AddEdge(generalRoute, draft)
     .WithOutputFrom(validate, draft)
     .Build();
+
+Console.OutputEncoding = System.Text.Encoding.UTF8;
+Console.WriteLine("AI Support Ticket Workflow. Type a support message and press Enter (or 'exit' to quit).");
+
+while (true)
+{
+    Console.WriteLine();
+    Console.Write("Ticket> ");
+    var input = Console.ReadLine();
+
+    if (input is null || input.Trim().Equals("exit", StringComparison.OrdinalIgnoreCase))
+    {
+        break;
+    }
+
+    await using var run = await InProcessExecution.RunStreamingAsync(workflow, new SupportTicket(input));
+
+    object? output = null;
+
+    await foreach (var evt in run.WatchStreamAsync())
+    {
+        switch (evt)
+        {
+            case ExecutorCompletedEvent completed:
+                Console.WriteLine($"  ✓ {completed.ExecutorId}");
+                break;
+
+            case WorkflowOutputEvent outputEvent:
+                output = outputEvent.Data;
+                break;
+
+            case ExecutorFailedEvent failed:
+                Console.WriteLine($"  ✗ {failed.ExecutorId} failed: {failed.Data}");
+                break;
+
+            case WorkflowErrorEvent error:
+                Console.WriteLine($"Workflow error: {error.Exception?.Message}");
+                break;
+        }
+    }
+
+    switch (output)
+    {
+        case string rejection:
+            Console.WriteLine();
+            Console.WriteLine(rejection);
+            break;
+
+        case TicketResult result:
+            PrintResult(result);
+            break;
+    }
+}
+
+static void PrintResult(TicketResult result)
+{
+    Console.WriteLine();
+    Console.WriteLine("=== Ticket Result ===");
+    Console.WriteLine($"Category:      {result.Category}");
+    Console.WriteLine($"Assigned team: {result.AssignedTeam}");
+    Console.WriteLine($"Summary:       {result.Summary}");
+    Console.WriteLine("Draft reply:");
+    Console.WriteLine(result.DraftResponse);
+}
