@@ -1,5 +1,7 @@
+using AgentWorkflowAITicketSupport;
 using AgentWorkflowAITicketSupport.Executors;
 using Microsoft.Agents.AI;
+using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.Configuration;
 using OpenAI;
 using OpenAI.Chat;
@@ -32,3 +34,15 @@ AIAgent classifierAgent = chatClient.AsAIAgent(
 
 var validate = new ValidateExecutor();
 var classify = new ClassifyExecutor(classifierAgent);
+
+var billingRoute = new RouteExecutor("BillingRoute", "Billing Team", "Verify the charges and process a refund if eligible.");
+var technicalRoute = new RouteExecutor("TechnicalRoute", "Engineering Support", "Reproduce the issue and collect logs and the app version.");
+var generalRoute = new RouteExecutor("GeneralRoute", "Customer Success", "Answer the question and share relevant resources.");
+
+var workflow = new WorkflowBuilder(validate)
+    .AddEdge(validate, classify)
+    .AddEdge<ClassifiedTicket>(classify, billingRoute, t => t?.Classification.Category == TicketCategory.Billing)
+    .AddEdge<ClassifiedTicket>(classify, technicalRoute, t => t?.Classification.Category == TicketCategory.Technical)
+    .AddEdge<ClassifiedTicket>(classify, generalRoute, t => t?.Classification.Category == TicketCategory.General)
+    .WithOutputFrom(validate)
+    .Build();

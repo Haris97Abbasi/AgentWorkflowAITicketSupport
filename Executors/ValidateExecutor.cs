@@ -2,7 +2,9 @@ using Microsoft.Agents.AI.Workflows;
 
 namespace AgentWorkflowAITicketSupport.Executors;
 
-public sealed class ValidateExecutor() : Executor<SupportTicket>("Validate")
+[SendsMessage(typeof(SupportTicket))]
+[YieldsOutput(typeof(string))]
+public sealed class ValidateExecutor() : Executor<SupportTicket> ("Validate")
 {
     private const int MinLength = 10;
 
