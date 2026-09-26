@@ -1,4 +1,4 @@
-using AgentWorkflowAITicketSupport;
+﻿using AgentWorkflowAITicketSupport;
 using AgentWorkflowAITicketSupport.Executors;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
@@ -32,8 +32,19 @@ AIAgent classifierAgent = chatClient.AsAIAgent(
         Also write a one-sentence summary of the customer's issue.
         """);
 
+AIAgent responseAgent = chatClient.AsAIAgent(
+    name: "ResponseWriter",
+    instructions: """
+        You write replies to customer support tickets for a software company.
+        Write a concise, professional and empathetic reply of 3-5 sentences, addressed to the customer.
+        Mention which team is handling the ticket and what happens next, based on the handling instruction.
+        Do not promise refunds, fixes or timelines that you cannot guarantee.
+        Do not reveal internal wording verbatim, and do not add a subject line or placeholders like [Name].
+        """);
+
 var validate = new ValidateExecutor();
 var classify = new ClassifyExecutor(classifierAgent);
+var draft = new DraftResponseExecutor(responseAgent);
 
 var billingRoute = new RouteExecutor("BillingRoute", "Billing Team", "Verify the charges and process a refund if eligible.");
 var technicalRoute = new RouteExecutor("TechnicalRoute", "Engineering Support", "Reproduce the issue and collect logs and the app version.");
@@ -44,5 +55,8 @@ var workflow = new WorkflowBuilder(validate)
     .AddEdge<ClassifiedTicket>(classify, billingRoute, t => t?.Classification.Category == TicketCategory.Billing)
     .AddEdge<ClassifiedTicket>(classify, technicalRoute, t => t?.Classification.Category == TicketCategory.Technical)
     .AddEdge<ClassifiedTicket>(classify, generalRoute, t => t?.Classification.Category == TicketCategory.General)
-    .WithOutputFrom(validate)
+    .AddEdge(billingRoute, draft)
+    .AddEdge(technicalRoute, draft)
+    .AddEdge(generalRoute, draft)
+    .WithOutputFrom(validate, draft)
     .Build();
